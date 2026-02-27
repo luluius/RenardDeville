@@ -197,7 +197,7 @@
             max-width: 80%;
         }
 
-        /* NOUVEAU : Wrapper pour l'image mobile, caché sur desktop */
+        /* Wrapper pour l'image mobile, caché sur desktop */
         #mobile-hero-wrapper {
             display: none;
             margin-top: 25px;
@@ -232,7 +232,7 @@
         .c9 { background-color: #b2dfdb; }
 
         /* =========================================
-           PAGE PUBLICATIONS & MESSAGES
+           PAGE PUBLICATIONS, GALERIE & MESSAGES
         ========================================= */
         /* Onglets pour mobile cachés sur desktop */
         .mobile-pub-tabs {
@@ -418,12 +418,12 @@
         }
         .delete-btn:hover { background: #c0392b; transform: scale(1.1); }
 
-        /* BARRE FLOTTANTE ADMIN (Vue / Sauvegarde) - NOUVELLE VERSION AVEC BOUTON ROND */
+        /* BARRE FLOTTANTE ADMIN */
         #admin-floating-wrapper {
             display: none;
             position: fixed;
             bottom: 20px;
-            left: 20px; /* Aligné en bas à gauche */
+            left: 20px;
             z-index: 9999;
             flex-direction: column;
             align-items: flex-start;
@@ -454,13 +454,13 @@
         }
 
         #admin-floating-bar {
-            display: none; /* Masqué par défaut, géré par JS lors du clic */
+            display: none;
             background: #333;
             color: white;
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            flex-direction: column; /* Boutons en colonne pour la compacité */
+            flex-direction: column;
             gap: 10px;
             align-items: stretch;
             text-align: center;
@@ -586,7 +586,7 @@
         .small-btn:hover { opacity:0.9; }
 
         /* =========================================
-           MODE MOBILE (RESPONSIVE) - CORRIGÉ
+           MODE MOBILE (RESPONSIVE)
         ========================================= */
         @media (max-width: 768px) {
             header {
@@ -604,15 +604,15 @@
                 width: auto;
             }
             .hamburger {
-                display: block; /* Affiche l'icône de menu */
+                display: block;
             }
             nav {
                 width: 100%;
-                display: none; /* Cache le menu par défaut */
+                display: none; 
                 animation: fadeIn 0.3s ease;
             }
             nav.menu-open {
-                display: block; /* Affiche le menu quand il a la classe menu-open */
+                display: block; 
             }
             nav ul {
                 flex-direction: column;
@@ -645,20 +645,22 @@
                 font-size: 45px; 
             }
             
-            /* NOUVEAU : Affichage du wrapper de l'image mobile */
+            /* Affichage du wrapper de l'image mobile - Grosse image visible */
             #mobile-hero-wrapper {
                 display: block;
+                margin-top: 25px;
             }
             #mobileHeroImage {
                 width: 100%;
-                border-radius: 12px;
+                height: 350px; /* Prend beaucoup de place en hauteur */
+                border-radius: 15px;
                 object-fit: cover;
-                display: none; /* caché par défaut si pas d'image */
+                display: none; /* caché par défaut si pas d'image uploadée */
+                box-shadow: 0 8px 20px rgba(0,0,0,0.15); /* Bel effet de profondeur */
             }
             #mobileHeroImage[src]:not([src=""]) {
                 display: block;
             }
-            /* Style de contour en mode édition admin pour bien voir la zone */
             body.is-admin #mobile-hero-wrapper {
                 border: 2px dashed #ffb300;
                 padding: 10px;
@@ -666,7 +668,7 @@
                 background: rgba(255, 179, 0, 0.1);
             }
 
-            /* Système d'onglets pour publications */
+            /* Système d'onglets pour publications et galerie */
             .mobile-pub-tabs {
                 display: flex;
                 justify-content: center;
@@ -690,15 +692,23 @@
             .publications-layout {
                 grid-template-columns: 1fr; 
             }
+            
+            /* Toggles pour Publications */
             .publications-layout.show-travail #col-publi-wrap { display: none; }
             .publications-layout.show-travail #col-travail-wrap { display: block; }
-            
             .publications-layout.show-publi #col-travail-wrap { display: none; }
             .publications-layout.show-publi #col-publi-wrap { display: block; }
 
-            #galerie-container {
+            /* Toggles pour Galerie */
+            .publications-layout.show-magalerie #col-miroirs-wrap { display: none; }
+            .publications-layout.show-magalerie #col-magalerie-wrap { display: block; }
+            .publications-layout.show-miroirs #col-magalerie-wrap { display: none; }
+            .publications-layout.show-miroirs #col-miroirs-wrap { display: block; }
+
+            #magalerie-container, #miroirs-container {
                 grid-template-columns: repeat(2, 1fr) !important; 
             }
+            
             .local-chat .controls {
                 flex-direction: column;
             }
@@ -706,12 +716,9 @@
                 width: 100%;
             }
             
-            /* CORRECTION DU BUG ADMIN TOOLS SUR MOBILE */
-            .admin-tools {
-                display: none; /* Cache la boîte de base */
-            }
+            .admin-tools { display: none; }
             body.is-admin .admin-tools {
-                display: flex; /* L'affiche seulement si on est connecté en admin */
+                display: flex;
                 flex-direction: column;
                 gap: 10px;
             }
@@ -720,31 +727,13 @@
                 width: 100%;
             }
             
-            #admin-floating-wrapper {
-                left: 10px; 
-                bottom: 10px;
-            }
-            .modal-content {
-                width: 90%;
-            }
-            .profile-pic {
-                width: 120px;
-                height: 120px;
-            }
-            .social-buttons {
-                flex-direction: column;
-                width: 100%;
-                max-width: 300px;
-            }
-            .social-btn {
-                text-align: center;
-            }
-            .comment-input-container {
-                flex-direction: column;
-            }
-            .comment-input-container button {
-                width: 100%;
-            }
+            #admin-floating-wrapper { left: 10px; bottom: 10px; }
+            .modal-content { width: 90%; }
+            .profile-pic { width: 120px; height: 120px; }
+            .social-buttons { flex-direction: column; width: 100%; max-width: 300px; }
+            .social-btn { text-align: center; }
+            .comment-input-container { flex-direction: column; }
+            .comment-input-container button { width: 100%; }
         }
     </style>
 </head>
@@ -886,11 +875,27 @@
 
         <section id="galerie" class="view-section">
             <div class="admin-tools">
-                <button onclick="openCreatePostModal('galerie')">+ Ajouter Photo/Vidéo</button>
+                <button onclick="openCreatePostModal('magalerie')">+ Ajouter à Ma Galerie</button>
+                <button onclick="openCreatePostModal('miroirs')">+ Ajouter à Mes Miroirs</button>
             </div>
-            <h2 class="editable-text" data-edit-id="galerie-title" style="margin-bottom: 20px;">Ma Galerie</h2>
-            <div id="galerie-container" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:15px;">
+
+            <div class="mobile-pub-tabs" id="mobile-galerie-tabs">
+                <button id="btn-tab-magalerie" class="active" onclick="switchGalerieTab('magalerie')">Ma Galerie</button>
+                <button id="btn-tab-miroirs" onclick="switchGalerieTab('miroirs')">Mes Miroirs</button>
+            </div>
+
+            <div class="publications-layout show-magalerie" id="galerie-layout">
+                <div id="col-magalerie-wrap">
+                    <h3 class="col-title editable-text" data-edit-id="col-magalerie-title">Ma Galerie</h3>
+                    <div id="magalerie-container" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:15px;">
+                    </div>
                 </div>
+                <div id="col-miroirs-wrap">
+                    <h3 class="col-title editable-text" data-edit-id="col-miroirs-title">Mes Miroirs</h3>
+                    <div id="miroirs-container" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:15px;">
+                    </div>
+                </div>
+            </div>
         </section>
 
         <section id="atelier" class="view-section">
@@ -964,26 +969,12 @@
     </footer>
 
     <script type="module">
-        // IMPORT FIREBASE via CDN
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         import { 
-            getFirestore, 
-            collection, 
-            addDoc, 
-            getDocs, 
-            query, 
-            orderBy,
-            doc,
-            setDoc,
-            getDoc,
-            onSnapshot,
-            updateDoc,
-            arrayUnion,
-            arrayRemove,
-            deleteDoc,
-            where
+            getFirestore, collection, addDoc, getDocs, query, orderBy, doc, setDoc, getDoc,
+            onSnapshot, updateDoc, arrayUnion, arrayRemove, deleteDoc, where
         } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         // CONFIGURATION FIREBASE
@@ -1027,7 +1018,6 @@
                 document.getElementById('nav-' + pageId).classList.add('active');
             }
 
-            // Fermer le menu sur mobile quand on change de page
             const nav = document.getElementById('main-nav');
             if(nav) nav.classList.remove('menu-open');
 
@@ -1056,7 +1046,25 @@
             }
         };
 
-        // --- NOUVELLE FONCTION POUR LE MENU FLOTTANT ADMIN ---
+        // NOUVEAU: Switch des onglets pour la galerie sur Mobile
+        window.switchGalerieTab = function(tab) {
+            const layout = document.getElementById('galerie-layout');
+            const btnMagalerie = document.getElementById('btn-tab-magalerie');
+            const btnMiroirs = document.getElementById('btn-tab-miroirs');
+            
+            if (tab === 'magalerie') {
+                layout.classList.add('show-magalerie');
+                layout.classList.remove('show-miroirs');
+                btnMagalerie.classList.add('active');
+                btnMiroirs.classList.remove('active');
+            } else {
+                layout.classList.add('show-miroirs');
+                layout.classList.remove('show-magalerie');
+                btnMiroirs.classList.add('active');
+                btnMagalerie.classList.remove('active');
+            }
+        };
+
         window.toggleAdminMenu = function() {
             const menu = document.getElementById('admin-floating-bar');
             if (menu.style.display === 'flex') {
@@ -1199,7 +1207,6 @@
                 if(document.getElementById('messages').classList.contains('active')) showPage('accueil');
                 deactivateEditableTexts();
                 
-                // Cacher le menu flottant s'il était ouvert
                 document.getElementById('admin-floating-bar').style.display = 'none';
                 
                 alert("Déconnecté.");
@@ -1334,6 +1341,12 @@
                     }
                 });
 
+                const socialLinksToSave = {
+                    insta: document.querySelector('.btn-insta').href,
+                    fb: document.querySelector('.btn-fb').href,
+                    tiktok: document.querySelector('.btn-tiktok').href
+                };
+
                 const configData = {
                     texts: textsToSave,
                     styles: {
@@ -1343,9 +1356,10 @@
                     },
                     images: { 
                         profilePic: profilePic.src,
-                        mobileHero: mobileHero.getAttribute('src') || "" // NOUVEAU: Sauvegarde de l'image mobile
+                        mobileHero: mobileHero.getAttribute('src') || ""
                     },
                     grids: gridsToSave,
+                    links: socialLinksToSave,
                     updatedAt: new Date()
                 };
 
@@ -1382,7 +1396,6 @@
                         if(data.images.profilePic) {
                             document.getElementById('profilePic').src = data.images.profilePic;
                         }
-                        // NOUVEAU: Chargement de l'image mobile
                         if(data.images.mobileHero !== undefined) {
                             const mh = document.getElementById('mobileHeroImage');
                             mh.src = data.images.mobileHero;
@@ -1402,6 +1415,11 @@
                                 el.style.backgroundPosition = "center";
                             }
                         });
+                    }
+                    if(data.links) {
+                        if(data.links.insta) document.querySelector('.btn-insta').href = data.links.insta;
+                        if(data.links.fb) document.querySelector('.btn-fb').href = data.links.fb;
+                        if(data.links.tiktok) document.querySelector('.btn-tiktok').href = data.links.tiktok;
                     }
                 }
             });
@@ -1456,10 +1474,30 @@
             });
         };
 
-        window.deleteElement = function(event, btnElement) {
+        window.deleteElement = async function(event, btnElement) {
             event.stopPropagation(); 
-            if(confirm("Voulez-vous vraiment supprimer cet élément ?")) {
-                btnElement.parentElement.remove();
+            if(confirm("Voulez-vous vraiment supprimer cet élément définitivement ?")) {
+                const parent = btnElement.parentElement;
+                const postId = parent.getAttribute('data-post-id');
+                
+                if (postId) {
+                    try {
+                        await deleteDoc(doc(db, "posts", postId));
+                        parent.remove(); 
+                    } catch(e) {
+                        console.error("Erreur de suppression:", e);
+                        alert("Erreur lors de la suppression du post : " + e.message);
+                    }
+                } else {
+                    const editId = parent.getAttribute('data-edit-id');
+                    if (editId) {
+                        parent.style.backgroundImage = 'none';
+                        parent.style.backgroundColor = 'transparent';
+                        alert("L'image a été retirée. N'oubliez pas de cliquer sur 'Sauvegarder les modifs' pour valider ce changement pour tout le monde !");
+                    } else {
+                        parent.remove();
+                    }
+                }
             }
         };
 
@@ -1469,6 +1507,7 @@
                 const newUrl = prompt(`Modifier le lien pour ${linkElement.innerText} :`, linkElement.href);
                 if(newUrl) {
                     linkElement.href = newUrl;
+                    alert(`Nouveau lien ajouté pour ${linkElement.innerText} ! N'oubliez pas de cliquer sur 'Sauvegarder les modifs' pour valider définitivement.`);
                 }
             }
         };
@@ -1480,7 +1519,6 @@
             });
         };
 
-        // NOUVEAU: Fonction pour l'upload de l'image depuis la vue mobile (Admin)
         window.triggerMobileHeroEdit = function() {
             if(!window.isEditMode) return;
             openFilePicker((dataUrl) => {
@@ -1563,9 +1601,11 @@
                 'travail': 'Nouveau Travail en cours',
                 'publication': 'Nouvelle Publication',
                 'galerie': 'Ajouter à la Galerie',
+                'magalerie': 'Ajouter à Ma Galerie',
+                'miroirs': 'Ajouter à Mes Miroirs',
                 'atelier': 'Poster dans l\'Atelier'
             };
-            document.getElementById('createPostTitle').innerText = titles[target];
+            document.getElementById('createPostTitle').innerText = titles[target] || 'Nouvelle Publication';
             
             document.getElementById('postText').value = "";
             document.getElementById('postFileInput').value = "";
@@ -1575,7 +1615,10 @@
             document.getElementById('postImagePreview').style.display = "none";
             document.getElementById('postVideoPreview').style.display = "none";
             
-            document.getElementById('postText').style.display = (target === 'galerie') ? 'none' : 'block';
+            // Masquer la zone de texte si c'est pour la galerie (Ma galerie / Mes miroirs / ancienne galerie)
+            const isGallery = (target === 'galerie' || target === 'magalerie' || target === 'miroirs');
+            document.getElementById('postText').style.display = isGallery ? 'none' : 'block';
+            
             document.getElementById('createPostModal').style.display = 'flex';
         };
 
@@ -1613,7 +1656,9 @@
             const CLOUD_NAME = "db1qtttwr";
             const UPLOAD_PRESET = "ml_default";
 
-            if(!currentPostFileData && currentPostTarget === 'galerie') {
+            const isGallery = (currentPostTarget === 'galerie' || currentPostTarget === 'magalerie' || currentPostTarget === 'miroirs');
+
+            if(!currentPostFileData && isGallery) {
                 alert("Veuillez sélectionner un fichier.");
                 return;
             }
@@ -1680,16 +1725,20 @@
                 }
             }
 
-            if(target === 'galerie') {
+            if(target === 'galerie' || target === 'magalerie' || target === 'miroirs') {
                 const newGridItem = document.createElement('div');
                 newGridItem.className = 'grid-item editable';
                 newGridItem.style.backgroundImage = `url(${fileData})`;
                 newGridItem.style.backgroundSize = "cover";
                 newGridItem.style.backgroundPosition = "center";
+                newGridItem.setAttribute('data-post-id', postId);
                 newGridItem.onclick = function() { triggerGridEdit(this); };
                 newGridItem.innerHTML = `<button class="delete-btn" onclick="deleteElement(event, this)" title="Supprimer">🗑️</button>`;
                 
-                const container = document.getElementById('galerie-container');
+                // Si c'est un ancien post "galerie", on le met dans "magalerie" par défaut
+                let containerId = (target === 'galerie') ? 'magalerie-container' : target + '-container';
+                const container = document.getElementById(containerId);
+                
                 if(container) container.prepend(newGridItem);
             } 
             else {
@@ -1737,7 +1786,8 @@
                 document.getElementById('travail-container').innerHTML = '';
                 document.getElementById('publication-container').innerHTML = '';
                 document.getElementById('atelier-container').innerHTML = '';
-                document.getElementById('galerie-container').innerHTML = '';
+                document.getElementById('magalerie-container').innerHTML = '';
+                document.getElementById('miroirs-container').innerHTML = '';
                 
                 snapshot.forEach((docSnap) => {
                     afficherPostSurInterface(docSnap.id, docSnap.data());
@@ -2050,6 +2100,4 @@
 
     </script>
 </body>
-
 </html>
-
