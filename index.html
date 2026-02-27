@@ -980,9 +980,8 @@
                     
                     <button class="btn-connexion" id="sendLocalBtn">Envoyer</button>
                     <button class="btn-connexion" style="background:#0277bd;" id="setLocalNameBtn">Nom</button>
-                    <button class="btn-connexion" style="background:#ccc;" id="clearLocalBtn">Effacer tout</button>
                 </div>
-                <p style="margin-top:8px; font-size:13px; color:#666;">Chat stocké localement (sinon utilisez la messagerie de contact pour messages administratifs).</p>
+                <p style="margin-top:8px; font-size:13px; color:#666;">Chat stocké en ligne (en temps réel).</p>
             </div>
         </section>
 
@@ -1018,7 +1017,7 @@
 
         <section id="messages" class="view-section">
             <h2 style="margin-bottom: 20px; font-family: var(--font-title);">📥 Boîte de réception</h2>
-            <p style="margin-bottom: 20px; color:#666;">Retrouvez ici tous les messages envoyés depuis le formulaire de contact (vue admin) ou vos messages reçus (vue utilisateur).</p>
+            <p style="margin-bottom: 20px; color:#666;" id="messages-subtitle">Retrouvez ici tous les messages envoyés depuis le formulaire de contact ainsi que les réponses.</p>
             <div id="messages-container" style="display: flex; flex-direction: column; gap: 15px;">
                 </div>
         </section>
@@ -1076,7 +1075,7 @@
             const modal = document.getElementById('mediaModal');
             const content = document.getElementById('mediaModalContent');
             modal.style.display = 'none';
-            content.innerHTML = ''; // Ceci permet de stopper la lecture d'une vidéo si on ferme
+            content.innerHTML = ''; 
         };
 
         // --- GESTION DE LA NAVIGATION ---
@@ -1102,9 +1101,13 @@
             if(nav) nav.classList.remove('menu-open');
 
             if(pageId === 'serveur') {
-                document.getElementById('serveur-locked').style.display = 'none';
-                document.getElementById('serveur-unlocked').style.display = 'block';
-                renderLocalChat();
+                if (window.userRole === 'guest') {
+                    document.getElementById('serveur-locked').style.display = 'block';
+                    document.getElementById('serveur-unlocked').style.display = 'none';
+                } else {
+                    document.getElementById('serveur-locked').style.display = 'none';
+                    document.getElementById('serveur-unlocked').style.display = 'block';
+                }
             }
         };
 
@@ -1155,7 +1158,8 @@
 
         // --- ECOUTEUR D'ETAT D'AUTHENTIFICATION ---
         let adminMessagesUnsubscribe = null;
-        let userInboxesUnsubscribe = null;
+        let userMessagesUnsubscribe = null;
+        let serverChatUnsubscribe = null;
         let postsUnsub = null;
 
         onAuthStateChanged(auth, async (user) => {
@@ -1174,26 +1178,30 @@
                     window.currentUsername = (user.email && user.email.split('@')[0]) || user.email;
                 }
 
+                document.getElementById('nav-item-messages').style.display = 'block';
+
                 if (user.email === "karl.renard.28@gmail.com") {
                     enableAdminMode();
                     if(adminMessagesUnsubscribe) adminMessagesUnsubscribe();
                     adminMessagesUnsubscribe = loadAdminMessagesRealtime();
                 } else {
                     enableUserMode();
-                    if(userInboxesUnsubscribe) userInboxesUnsubscribe();
-                    userInboxesUnsubscribe = loadUserInboxesRealtime(user.email);
+                    if(userMessagesUnsubscribe) userMessagesUnsubscribe();
+                    userMessagesUnsubscribe = loadUserMessagesRealtime(user.email);
                 }
             } else {
                 window.userRole = 'guest';
                 window.currentUserEmail = null;
                 window.currentUsername = null;
                 if(adminMessagesUnsubscribe) adminMessagesUnsubscribe();
-                if(userInboxesUnsubscribe) userInboxesUnsubscribe();
+                if(userMessagesUnsubscribe) userMessagesUnsubscribe();
                 document.getElementById('nav-item-messages').style.display = 'none';
                 document.getElementById('authBtn').innerText = "Connexion";
                 document.getElementById('authBtn').onclick = openLogin;
             }
             updateAuthButtonUI();
+            
+            if(document.getElementById('serveur').classList.contains('active')) showPage('serveur');
         });
 
         // --- GESTION DES MODALS ET CONNEXION ---
@@ -1255,10 +1263,9 @@
             document.body.classList.add('is-admin'); 
             document.getElementById('authBtn').innerText = "Déconnexion";
             document.getElementById('authBtn').onclick = logout;
-            document.getElementById('nav-item-messages').style.display = 'block';
+            document.getElementById('messages-subtitle').innerText = "Retrouvez ici tous les messages envoyés depuis le formulaire de contact (vue admin).";
             activateEditableTexts();
             closeLogin();
-            if(document.getElementById('serveur').classList.contains('active')) showPage('serveur');
         };
 
         window.enableUserMode = function() {
@@ -1267,11 +1274,9 @@
             document.body.classList.remove('is-admin');
             document.getElementById('authBtn').innerText = "Déconnexion";
             document.getElementById('authBtn').onclick = logout;
-            document.getElementById('nav-item-messages').style.display = 'none';
-            if(document.getElementById('messages').classList.contains('active')) showPage('accueil');
+            document.getElementById('messages-subtitle').innerText = "Retrouvez ici tous les messages que vous avez envoyés et les réponses de l'administrateur.";
             deactivateEditableTexts();
             closeLogin();
-            if(document.getElementById('serveur').classList.contains('active')) showPage('serveur');
         };
 
         window.logout = function() {
@@ -1327,7 +1332,7 @@
             }
         };
 
-        // --- GESTION IMAGE CONTACT ADMIN ---
+        // --- GESTION IMAGE CONTACT ET ENVOI ---
         window.previewContactImage = function(event) {
             const file = event.target.files[0];
             const preview = document.getElementById('contactImagePreview');
@@ -1358,7 +1363,6 @@
                 let imageUrl = "";
                 const fileInput = document.getElementById('contactImage');
                 
-                // Si une image a été sélectionnée, on l'uploade d'abord vers Cloudinary
                 if (fileInput.files.length > 0) {
                     btn.innerText = "Téléchargement de l'image...";
                     const formData = new FormData();
@@ -1379,7 +1383,7 @@
                     nom: document.getElementById('contactName').value,
                     email: document.getElementById('contactEmail').value,
                     message: document.getElementById('contactMessage').value,
-                    image: imageUrl, // Ajout du lien de l'image
+                    image: imageUrl, 
                     date: new Date(),
                     replies: []
                 });
@@ -1397,6 +1401,7 @@
             }
         };
 
+        // ... (Le code de sauvegarde admin et des posts restent identiques, ils fonctionnent parfaitement) ...
         window.saveAdminChanges = async function() {
             const btn = document.getElementById('saveGlobalBtn');
             btn.innerText = "⏳ Sauvegarde...";
@@ -1956,7 +1961,6 @@
                         repliesHTML += `<div style="margin-top:8px; padding:8px; background:#f3f3f3; border-radius:6px;"><strong>${r.author} :</strong> ${r.text} <br><small style="color:#888">${rDate}</small></div>`;
                     });
 
-                    // Si le message contient une image, on crée un code HTML pour l'afficher
                     const imgHTML = msg.image ? `<img src="${msg.image}" style="max-width:100%; border-radius:8px; margin-top:10px; cursor:zoom-in;" onclick="openMediaModal('${msg.image}', 'image')"><br>` : '';
 
                     const msgHTML = `
@@ -1986,17 +1990,7 @@
                 const msgRef = doc(db, "messages", messageDocId);
                 const replyObj = { author: "Administrateur", text: replyText, date: new Date() };
                 await updateDoc(msgRef, { replies: arrayUnion(replyObj) });
-
-                await addDoc(collection(db, "inboxes"), {
-                    recipientEmail: recipientEmail,
-                    messageId: messageDocId,
-                    from: "admin",
-                    text: replyText,
-                    date: new Date(),
-                    visible: true,
-                    read: false
-                });
-                alert("Réponse envoyée et sauvegardée. L'utilisateur verra un onglet 'Messages' temporaire.");
+                alert("Réponse envoyée et sauvegardée. L'utilisateur la verra dans son onglet Messages.");
             } catch(e) {
                 console.error("Erreur replyToMessage:", e);
                 alert("Erreur lors de l'envoi de la réponse : " + e.message);
@@ -2004,90 +1998,69 @@
         };
 
         window.adminDeleteMessage = async function(messageDocId) {
-            if(!confirm("Confirmer la suppression définitive de ce message (et des notifications associéess) ?")) return;
+            if(!confirm("Confirmer la suppression définitive de ce message ?")) return;
             try {
                 await deleteDoc(doc(db, "messages", messageDocId));
-                const q = query(collection(db, "inboxes"), where("messageId", "==", messageDocId));
-                const snaps = await getDocs(q);
-                const deletions = [];
-                snaps.forEach(s => {
-                    deletions.push(deleteDoc(doc(db, "inboxes", s.id)));
-                });
-                await Promise.all(deletions);
-                alert("Message et notifications associées supprimés.");
+                alert("Message supprimé.");
             } catch(e) {
                 console.error("Erreur adminDeleteMessage:", e);
                 alert("Erreur lors de la suppression : " + e.message);
             }
         };
 
-        function loadUserInboxesRealtime(userEmail) {
-            const q = query(collection(db, "inboxes"), where("recipientEmail", "==", userEmail), where("visible", "==", true), orderBy("date", "desc"));
+        // --- GESTION DE LA VUE MESSAGES UTILISATEURS (NON-ADMIN) ---
+        function loadUserMessagesRealtime(userEmail) {
+            const q = query(collection(db, "messages"), where("email", "==", userEmail));
             const unsubscribe = onSnapshot(q, (snapshot) => {
                 const container = document.getElementById('messages-container');
-                if(!snapshot.empty) {
-                    document.getElementById('nav-item-messages').style.display = 'block';
-                } else {
-                    document.getElementById('nav-item-messages').style.display = 'none';
-                    if(document.getElementById('messages').classList.contains('active')) showPage('accueil');
-                }
                 container.innerHTML = '';
+                
                 if(snapshot.empty) {
-                    container.innerHTML = '<p>Vous n\'avez aucun message.</p>';
+                    container.innerHTML = '<p>Vous n\'avez envoyé aucun message au créateur pour le moment.</p>';
                     return;
                 }
-                snapshot.forEach((docSnap) => {
-                    const m = docSnap.data();
-                    const dateStr = m.date ? (m.date.toDate ? m.date.toDate().toLocaleString('fr-FR') : new Date(m.date).toLocaleString('fr-FR')) : '';
-                    const inboxHTML = `
-                        <div class="post-card" style="border-left: 4px solid var(--primary-green);" data-inbox-id="${docSnap.id}">
-                            <strong>📩 Message de l'admin</strong> <br>
-                            <small style="color:#888;">Le ${dateStr}</small>
-                            <div style="margin-top:12px; white-space:pre-wrap;">${m.text}</div>
-                            <div style="margin-top:10px;">
-                                <button class="btn-connexion" onclick="markInboxRead('${docSnap.id}')">Marquer lu</button>
-                                <button class="btn-connexion" style="background:#e74c3c;" onclick="hideInbox('${docSnap.id}')">Fermer</button>
+
+                // On trie manuellement les messages du plus récent au plus ancien
+                const docs = [];
+                snapshot.forEach(doc => docs.push({id: doc.id, ...doc.data()}));
+                docs.sort((a,b) => {
+                    const dateA = a.date ? (a.date.toMillis ? a.date.toMillis() : new Date(a.date).getTime()) : 0;
+                    const dateB = b.date ? (b.date.toMillis ? b.date.toMillis() : new Date(b.date).getTime()) : 0;
+                    return dateB - dateA;
+                });
+
+                docs.forEach(msg => {
+                    const dateStr = msg.date ? (msg.date.toDate ? msg.date.toDate().toLocaleString('fr-FR') : new Date(msg.date).toLocaleString('fr-FR')) : '';
+                    const replies = msg.replies || [];
+                    
+                    let repliesHTML = '';
+                    replies.forEach(r => {
+                        const rDate = r.date && r.date.toDate ? r.date.toDate().toLocaleString('fr-FR') : (r.date ? new Date(r.date).toLocaleString('fr-FR') : '');
+                        repliesHTML += `<div style="margin-top:8px; padding:10px; background:#e8f5e9; border-radius:6px; border-left:4px solid var(--primary-green);"><strong>${r.author} :</strong> <br>${r.text} <br><small style="color:#888">${rDate}</small></div>`;
+                    });
+
+                    const imgHTML = msg.image ? `<img src="${msg.image}" style="max-width:100%; border-radius:8px; margin-top:10px; cursor:zoom-in;" onclick="openMediaModal('${msg.image}', 'image')"><br>` : '';
+
+                    const msgHTML = `
+                        <div class="post-card" style="border-left: 4px solid #3498db;" data-message-id="${msg.id}">
+                            <strong>📝 Votre message</strong> <br>
+                            <small style="color: #888;">Envoyé le ${dateStr}</small>
+                            <div style="margin-top:10px; padding-top:10px; border-top:1px solid #eee; white-space: pre-wrap;">${msg.message}</div>
+                            ${imgHTML}
+                            <div style="margin-top:15px;">
+                                <strong>Réponses de l'administrateur :</strong>
+                                ${replies.length > 0 ? repliesHTML : '<p style="color:#666; font-size:13px; margin-top:5px;">Aucune réponse pour le moment.</p>'}
                             </div>
                         </div>
                     `;
-                    container.insertAdjacentHTML('beforeend', inboxHTML);
+                    container.insertAdjacentHTML('beforeend', msgHTML);
                 });
             });
             return unsubscribe;
         }
 
-        window.markInboxRead = async function(inboxId) {
-            try {
-                await updateDoc(doc(db, "inboxes", inboxId), { read: true });
-                alert("Marqué comme lu.");
-            } catch(e) { console.error(e); alert("Erreur."); }
-        };
 
-        window.hideInbox = async function(inboxId) {
-            try {
-                await updateDoc(doc(db, "inboxes", inboxId), { visible: false });
-                alert("Message fermé.");
-            } catch(e) { console.error(e); alert("Erreur."); }
-        };
-
-        const LOCAL_CHAT_KEY = 'mosaic_local_chat';
-        const LOCAL_NAME_KEY = 'mosaic_local_name';
-
-        function loadLocalMessages() {
-            try {
-                const raw = localStorage.getItem(LOCAL_CHAT_KEY);
-                if(!raw) return [];
-                return JSON.parse(raw);
-            } catch(e) {
-                return [];
-            }
-        }
-
-        function saveLocalMessages(messages) {
-            localStorage.setItem(LOCAL_CHAT_KEY, JSON.stringify(messages));
-        }
-
-        // --- GESTION IMAGE CHAT LOCAL ---
+        // --- GESTION DU CHAT EN LIGNE (SERVEUR) ---
         let currentLocalChatImageData = "";
 
         window.previewLocalChatImage = function(event) {
@@ -2108,46 +2081,54 @@
             document.getElementById('localChatImagePreviewContainer').style.display = 'none';
         };
 
-        function renderLocalChat() {
-            const container = document.getElementById('localChatContainer');
-            const messages = loadLocalMessages();
-            container.innerHTML = '';
-            if(messages.length === 0) {
-                container.innerHTML = '<p style="color:#666;">Aucun message pour l\'instant. Écrivez le premier message !</p>';
-                return;
-            }
-            messages.forEach(msg => {
-                const el = document.createElement('div');
-                el.className = 'message';
-                const date = msg.date ? new Date(msg.date).toLocaleString('fr-FR') : '';
-                const metaName = msg.username || msg.authorName || (msg.email || 'Anonyme');
+        function loadServerChatRealtime() {
+            const q = query(collection(db, "server_chat"), orderBy("date", "asc"));
+            return onSnapshot(q, (snapshot) => {
+                const container = document.getElementById('localChatContainer');
+                container.innerHTML = '';
                 
-                // Si l'objet message a une image (sauvegardée en base64)
-                const imgHTML = msg.image ? `<div style="margin-top: 8px;"><img src="${msg.image}" style="max-width:100%; max-height:200px; border-radius:8px; cursor:zoom-in;" onclick="openMediaModal('${msg.image}', 'image')"></div>` : '';
+                if(snapshot.empty) {
+                    container.innerHTML = '<p style="color:#666;">Aucun message pour l\'instant. Écrivez le premier message !</p>';
+                    return;
+                }
+                
+                snapshot.forEach(docSnap => {
+                    const msg = docSnap.data();
+                    const msgId = docSnap.id;
+                    const el = document.createElement('div');
+                    el.className = 'message';
+                    
+                    const dateStr = msg.date ? (msg.date.toDate ? msg.date.toDate().toLocaleString('fr-FR') : new Date(msg.date).toLocaleString('fr-FR')) : '';
+                    const metaName = msg.username || msg.authorName || (msg.email || 'Anonyme');
+                    
+                    const imgHTML = msg.image ? `<div style="margin-top: 8px;"><img src="${msg.image}" style="max-width:100%; max-height:200px; border-radius:8px; cursor:zoom-in;" onclick="openMediaModal('${msg.image}', 'image')"></div>` : '';
 
-                el.innerHTML = `
-                    <div class="meta"><strong>${escapeHtml(metaName)}</strong> • <small>${escapeHtml(date)}</small></div>
-                    <div class="body">${escapeHtml(msg.text)}</div>
-                    ${imgHTML}
-                    <div class="replies"></div>
-                    <div class="controls" style="margin-top:8px;">
-                        <button class="small-btn" onclick="replyLocalMessage('${msg.id}')">Répondre</button>
-                        <button class="small-btn" onclick="quoteLocalMessage('${msg.id}')">Citer</button>
-                        ${window.userRole === 'admin' ? `<button class="small-btn" style="background:#e74c3c;color:white;" onclick="deleteLocalMessage('${msg.id}')">Supprimer</button>` : ''}
-                    </div>
-                `;
-                const repliesEl = el.querySelector('.replies');
-                (msg.replies || []).forEach(r => {
-                    const rEl = document.createElement('div');
-                    rEl.className = 'reply';
-                    const rDate = r.date ? new Date(r.date).toLocaleString('fr-FR') : '';
-                    const rAuthor = r.username || r.authorName || r.from || 'Anonyme';
-                    rEl.innerHTML = `<div style="font-size:12px;color:#666;"><strong>${escapeHtml(rAuthor)}</strong> • <small>${escapeHtml(rDate)}</small></div><div style="margin-top:4px;">${escapeHtml(r.text)}</div>`;
-                    repliesEl.appendChild(rEl);
+                    el.innerHTML = `
+                        <div class="meta"><strong>${escapeHtml(metaName)}</strong> • <small>${escapeHtml(dateStr)}</small></div>
+                        <div class="body" style="white-space: pre-wrap;">${escapeHtml(msg.text)}</div>
+                        ${imgHTML}
+                        <div class="replies"></div>
+                        <div class="controls" style="margin-top:8px;">
+                            <button class="small-btn" onclick="replyServerMessage('${msgId}')">Répondre</button>
+                            <button class="small-btn" onclick="quoteServerMessage('${msgId}', '${escapeHtml(metaName)}', '${escapeHtml(msg.text).replace(/'/g, "\\'")}')">Citer</button>
+                            ${window.userRole === 'admin' ? `<button class="small-btn" style="background:#e74c3c;color:white;" onclick="deleteServerMessage('${msgId}')">Supprimer</button>` : ''}
+                        </div>
+                    `;
+                    
+                    const repliesEl = el.querySelector('.replies');
+                    (msg.replies || []).forEach(r => {
+                        const rEl = document.createElement('div');
+                        rEl.className = 'reply';
+                        const rDate = r.date ? (r.date.toDate ? r.date.toDate().toLocaleString('fr-FR') : new Date(r.date).toLocaleString('fr-FR')) : '';
+                        const rAuthor = r.username || r.authorName || r.from || 'Anonyme';
+                        rEl.innerHTML = `<div style="font-size:12px;color:#666;"><strong>${escapeHtml(rAuthor)}</strong> • <small>${escapeHtml(rDate)}</small></div><div style="margin-top:4px; white-space:pre-wrap;">${escapeHtml(r.text)}</div>`;
+                        repliesEl.appendChild(rEl);
+                    });
+                    
+                    container.appendChild(el);
                 });
-                container.appendChild(el);
+                container.scrollTop = container.scrollHeight;
             });
-            container.scrollTop = container.scrollHeight;
         }
 
         function escapeHtml(str) {
@@ -2160,85 +2141,98 @@
                 .replaceAll("'", '&#039;');
         }
 
-        function sendLocalChatMessage() {
+        window.sendServerChatMessage = async function() {
             const input = document.getElementById('localMessageInput');
             const text = input.value.trim();
-            
-            // S'il n'y a ni texte, ni image, on annule.
+            const sendBtn = document.getElementById('sendLocalBtn');
+
             if(!text && !currentLocalChatImageData) return; 
 
-            const messages = loadLocalMessages();
-            const id = Date.now().toString(36) + Math.random().toString(36).slice(2,8);
-            const username = window.currentUsername || localStorage.getItem(LOCAL_NAME_KEY) || promptForLocalName();
+            sendBtn.disabled = true;
+            sendBtn.innerText = "⏳";
+
+            const username = window.currentUsername || localStorage.getItem('mosaic_local_name') || promptForLocalName();
             const email = window.currentUserEmail || null;
             
-            const msg = {
-                id,
-                username,
-                authorName: username,
-                email,
-                text,
-                image: currentLocalChatImageData, // Ajout de l'image (en format Base64) pour le chat local
-                date: new Date().toISOString(),
-                replies: []
-            };
-            
-            messages.push(msg);
-            saveLocalMessages(messages);
-            
-            input.value = '';
-            clearLocalChatImage(); // On réinitialise l'image
-            renderLocalChat();
+            const CLOUD_NAME = "db1qtttwr";
+            const UPLOAD_PRESET = "ml_default";
+            let imageUrl = "";
+
+            try {
+                if (currentLocalChatImageData) {
+                    const formData = new FormData();
+                    formData.append('file', currentLocalChatImageData);
+                    formData.append('upload_preset', UPLOAD_PRESET);
+
+                    const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
+                        method: 'POST', body: formData
+                    });
+                    const data = await response.json();
+                    if (data.secure_url) {
+                        imageUrl = data.secure_url;
+                    }
+                }
+
+                await addDoc(collection(db, "server_chat"), {
+                    username: username,
+                    authorName: username,
+                    email: email,
+                    text: text,
+                    image: imageUrl,
+                    date: new Date(),
+                    replies: []
+                });
+                
+                input.value = '';
+                clearLocalChatImage();
+            } catch (e) {
+                console.error("Erreur d'envoi", e);
+                alert("Erreur: " + e.message);
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.innerText = "Envoyer";
+            }
         }
 
-        window.replyLocalMessage = function(messageId) {
+        window.replyServerMessage = async function(messageId) {
             const text = prompt("Écrire une réponse publique :");
             if(!text) return;
-            const messages = loadLocalMessages();
-            const idx = messages.findIndex(m => m.id === messageId);
-            if(idx === -1) { alert("Message introuvable."); return; }
-            const username = window.currentUsername || localStorage.getItem(LOCAL_NAME_KEY) || promptForLocalName();
-            const reply = {
-                id: Date.now().toString(36) + Math.random().toString(36).slice(2,8),
-                username,
-                text,
-                date: new Date().toISOString()
-            };
-            messages[idx].replies = messages[idx].replies || [];
-            messages[idx].replies.push(reply);
-            saveLocalMessages(messages);
-            renderLocalChat();
+            const username = window.currentUsername || localStorage.getItem('mosaic_local_name') || promptForLocalName();
+            
+            try {
+                const msgRef = doc(db, "server_chat", messageId);
+                const replyObj = {
+                    username: username,
+                    text: text,
+                    date: new Date()
+                };
+                await updateDoc(msgRef, { replies: arrayUnion(replyObj) });
+            } catch(e) {
+                alert("Erreur lors de la réponse: " + e.message);
+            }
         };
 
-        window.quoteLocalMessage = function(messageId) {
-            const messages = loadLocalMessages();
-            const m = messages.find(x => x.id === messageId);
-            if(!m) return;
+        window.quoteServerMessage = function(messageId, username, text) {
             const input = document.getElementById('localMessageInput');
-            input.value = `@${m.username || 'Anonyme'}: "${m.text}" `;
+            input.value = `@${username || 'Anonyme'}: "${text}" \n`;
             input.focus();
         };
 
-        window.deleteLocalMessage = function(messageId) {
-            if(!confirm("Confirmer la suppression du message local ?")) return;
-            let messages = loadLocalMessages();
-            messages = messages.filter(m => m.id !== messageId);
-            saveLocalMessages(messages);
-            renderLocalChat();
+        window.deleteServerMessage = async function(messageId) {
+            if(!confirm("Confirmer la suppression du message sur le serveur ?")) return;
+            try {
+                await deleteDoc(doc(db, "server_chat", messageId));
+            } catch(e) {
+                alert("Erreur lors de la suppression: " + e.message);
+            }
         };
 
-        function clearAllLocal() {
-            if(!confirm("Effacer tous les messages locaux ?")) return;
-            localStorage.removeItem(LOCAL_CHAT_KEY);
-            renderLocalChat();
-        }
-
         function promptForLocalName() {
-            const existing = localStorage.getItem(LOCAL_NAME_KEY);
+            const existing = localStorage.getItem('mosaic_local_name');
             if(existing) return existing;
             const name = prompt("Choisissez un nom d'affichage pour le chat (visible) :");
             if(name && name.trim()) {
-                localStorage.setItem(LOCAL_NAME_KEY, name.trim());
+                localStorage.setItem('mosaic_local_name', name.trim());
                 return name.trim();
             }
             return "Anonyme";
@@ -2246,31 +2240,29 @@
 
         document.addEventListener('click', (e) => {
             const sendBtn = document.getElementById('sendLocalBtn');
-            if(sendBtn && e.target === sendBtn) sendLocalChatMessage();
+            if(sendBtn && e.target === sendBtn) sendServerChatMessage();
+            
             const setBtn = document.getElementById('setLocalNameBtn');
             if(setBtn && e.target === setBtn) {
-                const name = prompt("Nom d'affichage local :", localStorage.getItem(LOCAL_NAME_KEY) || '');
+                const name = prompt("Nom d'affichage local :", localStorage.getItem('mosaic_local_name') || '');
                 if(name && name.trim()) {
-                    localStorage.setItem(LOCAL_NAME_KEY, name.trim());
+                    localStorage.setItem('mosaic_local_name', name.trim());
                     alert("Nom d'affichage enregistré : " + name.trim());
-                    renderLocalChat();
                 }
             }
-            const clearBtn = document.getElementById('clearLocalBtn');
-            if(clearBtn && e.target === clearBtn) clearAllLocal();
         });
 
         document.getElementById('localMessageInput').addEventListener('keydown', function(e){
             if(e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                sendLocalChatMessage();
+                sendServerChatMessage();
             }
         });
 
         function initApp() {
             loadSiteConfigRealtime(); 
             window.postsUnsub = loadPostsRealtime();
-            renderLocalChat();
+            window.serverChatUnsubscribe = loadServerChatRealtime();
         }
 
         initApp();
