@@ -1594,6 +1594,7 @@
         let currentPostTarget = "";
         let currentPostFileData = ""; 
         let currentPostFileType = "";
+        let currentRawFile = null;
 
         window.openCreatePostModal = function(target) {
             currentPostTarget = target;
@@ -1611,6 +1612,7 @@
             document.getElementById('postFileInput').value = "";
             currentPostFileData = "";
             currentPostFileType = "";
+            currentRawFile = null;
             document.getElementById('postFilePreviewContainer').style.display = "none";
             document.getElementById('postImagePreview').style.display = "none";
             document.getElementById('postVideoPreview').style.display = "none";
@@ -1629,6 +1631,9 @@
         window.previewPostFile = function(event) {
             const file = event.target.files[0];
             if(!file) return;
+            
+            currentRawFile = file;
+            
             const reader = new FileReader();
             reader.onload = function(e) {
                 currentPostFileData = e.target.result;
@@ -1670,7 +1675,7 @@
                 if (currentPostFileData) {
                     titleElement.innerText = "Envoi du fichier vers Cloudinary... ⏳";
                     const formData = new FormData();
-                    formData.append('file', currentPostFileData);
+                    formData.append('file', currentRawFile);
                     formData.append('upload_preset', UPLOAD_PRESET);
 
                     const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, {
